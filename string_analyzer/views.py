@@ -21,6 +21,7 @@ def home(request):
 def strings(request):
     if request.method == 'POST':
         value = request.data.get('value', '')
+        print(request.data)
         if not value:
             return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
         elif not isinstance(value, str):
