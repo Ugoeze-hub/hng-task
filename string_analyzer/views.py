@@ -35,7 +35,7 @@ def strings(request):
                     print("Extracted value from _content:", value)
                 except (json.JSONDecodeError, KeyError, TypeError) as e:
                     print(f"Error parsing _content: {e}")
-                    return Response({"error": "Invalid JSON in _content field"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
             
             elif 'value' in request.data:
                 value = request.data['value']
@@ -52,7 +52,7 @@ def strings(request):
             sha256_hash = hashlib.sha256(value.encode()).hexdigest()
 
             if AnalyzedString.objects.filter(sha256_hash=sha256_hash).exists():
-                return Response({"error": "String has already been analyzed"}, status=status.HTTP_409_CONFLICT)
+                return Response({"error": "String already exists in the system"}, status=status.HTTP_409_CONFLICT)
             
             #this is to erform analysis
             length = len(value)
