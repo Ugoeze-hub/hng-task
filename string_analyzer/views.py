@@ -82,7 +82,7 @@ def get_string(request, specific_string):
                     "character_frequency_map": specific_analyzed_string.character_frequency_map
                 },
                 "created_at": specific_analyzed_string.created_at
-            }, status=status.HTTP_201_CREATED)
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except AnalyzedString.DoesNotExist:
@@ -156,6 +156,8 @@ def get_filtered_strings(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    
+    
 @api_view(['GET'])
 def natural_language_filter(request):
     try:
@@ -222,7 +224,7 @@ def natural_language_filter(request):
 def delete_string(request, specific_string):
     try:
         specific_analyzed_string = AnalyzedString.objects.get(value=specific_string)
-        specific_analyzed_string.delete()
+        AnalyzedStringSerializer(specific_analyzed_string).delete()
         return Response({"message": "String successfully deleted"}, status=status.HTTP_200_OK)
     except AnalyzedString.DoesNotExist:
         return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
