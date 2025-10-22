@@ -20,18 +20,14 @@ def home(request):
 @api_view(['POST', 'GET'])
 def strings(request):
     if request.method == 'POST':
-        try:
-            print("=== DEBUG POST REQUEST ===")
-            print("Content-Type:", request.content_type)
-            print("Request data type:", type(request.data))
-            print("Request data:", request.data)
-            
+        try:            
             value = None
             
-            if (request.content_type == 'application/x-www-form-urlencoded' and 
-                '_content' in request.data):
+            if request.content_type == 'application/json' and isinstance(request.data, dict):
+                value = request.data.get('value')
+            elif (request.content_type == 'application/x-www-form-urlencoded' and 
+                  '_content' in request.data):
                 try:
-                    # Extract the JSON from the _content field
                     json_content = request.data['_content']
                     print("Found _content field:", json_content)
                     parsed_data = json.loads(json_content)
@@ -41,18 +37,14 @@ def strings(request):
                     print(f"Error parsing _content: {e}")
                     return Response({"error": "Invalid JSON in _content field"}, status=status.HTTP_400_BAD_REQUEST)
             
-            if value is None:
-                if 'value' in request.data:
-                    value = request.data['value']
-                    print("Extracted value directly from request.data:", value)
-
-                else:
-                    return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
+            elif 'value' in request.data:
+                value = request.data['value']
             
-            print("Final extracted value:", value)
+            if value is None or value == "":
+                return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
             
-            if not value:
-                return Response({"error": "Missing 'value' field in request body"}, status=status.HTTP_400_BAD_REQUEST)
+            if not isinstance(value, str):
+                return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
             
             if not isinstance(value, str):
                 return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -62,14 +54,14 @@ def strings(request):
             if AnalyzedString.objects.filter(sha256_hash=sha256_hash).exists():
                 return Response({"error": "String has already been analyzed"}, status=status.HTTP_409_CONFLICT)
             
-            # Perform analysis
+            #this is to erform analysis
             length = len(value)
             is_palindrome = value.lower() == value.lower()[::-1]
             unique_characters = len(set(value))
             word_count = len(value.split())
             character_frequency_map = dict(Counter(value))
 
-            # Create database entry
+            #and create database entry
             analyzed_value = AnalyzedString.objects.create(
                 value=value,
                 length=length,
