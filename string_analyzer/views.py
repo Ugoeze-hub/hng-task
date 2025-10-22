@@ -28,7 +28,6 @@ def strings(request):
             
             value = None
             
-            # Handle the case where data comes in as form-encoded but contains JSON in _content
             if (request.content_type == 'application/x-www-form-urlencoded' and 
                 '_content' in request.data):
                 try:
@@ -42,26 +41,22 @@ def strings(request):
                     print(f"Error parsing _content: {e}")
                     return Response({"error": "Invalid JSON in _content field"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # If we didn't get value from _content, try other approaches
             if value is None:
-                # Check if value is directly in request.data (for regular form data)
                 if 'value' in request.data:
                     value = request.data['value']
                     print("Extracted value directly from request.data:", value)
 
                 else:
-                    # FIX: Return 400 if no value found anywhere
                     return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
             
             print("Final extracted value:", value)
             
-            # Validate value
             if not value:
                 return Response({"error": "Missing 'value' field in request body"}, status=status.HTTP_400_BAD_REQUEST)
             
             if not isinstance(value, str):
                 return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-            # Rest of your existing logic for analysis and database creation...
+            
             sha256_hash = hashlib.sha256(value.encode()).hexdigest()
 
             if AnalyzedString.objects.filter(sha256_hash=sha256_hash).exists():
@@ -85,7 +80,7 @@ def strings(request):
                 character_frequency_map=character_frequency_map
             )
             
-            # Return success response
+            
             return Response({
                 "id": sha256_hash, 
                 "value": value,
@@ -108,7 +103,7 @@ def strings(request):
     
     
     elif request.method == 'GET':
-        # GET method for filtered strings
+        
         try:
             all_strings = AnalyzedString.objects.all()
 
@@ -238,7 +233,6 @@ def natural_language_filter(request):
             vowel = contains_vowel.group(1) if contains_vowel.group(1) else "a"
             natural_language_filters["value__icontains"] = vowel
 
-        # Handle length queries
         longer_than = re.search(r"longer than (\d+)", query)
         if longer_than:
             natural_language_filters['length__gt'] = int(longer_than.group(1))
