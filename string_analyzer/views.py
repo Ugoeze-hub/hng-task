@@ -104,7 +104,7 @@ def get_filtered_strings(request):
         if is_palindrome is not None:
             if is_palindrome.lower() not in ['true', 'false']:
                 return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
-            is_palindrome_bool = is_palindrome.lower() == 'true' #this will convert the string to an actual boolean
+            is_palindrome_bool = is_palindrome.lower() == 'true'
             all_strings = all_strings.filter(is_palindrome=is_palindrome_bool)
             applied_filters['is_palindrome'] = is_palindrome_bool
 
