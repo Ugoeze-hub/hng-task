@@ -17,53 +17,125 @@ def home(request):
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(['POST', 'GET'])
 def strings(request):
-    value = request.data.get('value', '')
-    if not value:
-        return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
-    elif not isinstance(value, str):
-        return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-    
-    sha256_hash = hashlib.sha256(value.encode()).hexdigest()
+    if request.method == 'POST':
+        value = request.data.get('value', '')
+        if not value:
+            return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
+        elif not isinstance(value, str):
+            return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        
+        sha256_hash = hashlib.sha256(value.encode()).hexdigest()
 
-    if AnalyzedString.objects.filter(sha256_hash=sha256_hash).exists():
-        return Response({"error": "String has already been analyzed"}, status=status.HTTP_409_CONFLICT)
-    
-    #doing the analysis
-    length = len(value)
-    is_palindrome = value.lower() == value.lower()[::-1]
-    unique_characters = len(set(value))
-    word_count = len(value.split())
-    character_frequency_map = dict(Counter(value))
+        if AnalyzedString.objects.filter(sha256_hash=sha256_hash).exists():
+            return Response({"error": "String has already been analyzed"}, status=status.HTTP_409_CONFLICT)
+        
+        #doing the analysis
+        length = len(value)
+        is_palindrome = value.lower() == value.lower()[::-1]
+        unique_characters = len(set(value))
+        word_count = len(value.split())
+        character_frequency_map = dict(Counter(value))
 
-    #putting it back in my db
-    analyzed_value = AnalyzedString.objects.create(
-        value=value,
-        length=length,
-        is_palindrome=is_palindrome,
-        unique_characters=unique_characters,
-        word_count=word_count,
-        sha256_hash=sha256_hash,
-        character_frequency_map=character_frequency_map
-    )
-    try:
-        serializer = AnalyzedStringSerializer(analyzed_value)
-        return Response({
-            "id": sha256_hash, 
-            "value": value,
-            "properties": {
-                "length": length,
-                "is_palindrome": is_palindrome,
-                "unique_characters": unique_characters,
-                "word_count": word_count,
-                "sha256_hash": sha256_hash,
-                "character_frequency_map": character_frequency_map
-            },
-            "created_at": analyzed_value.created_at
-        }, status=status.HTTP_201_CREATED)
-    except Exception as e:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #putting it back in my db
+        analyzed_value = AnalyzedString.objects.create(
+            value=value,
+            length=length,
+            is_palindrome=is_palindrome,
+            unique_characters=unique_characters,
+            word_count=word_count,
+            sha256_hash=sha256_hash,
+            character_frequency_map=character_frequency_map
+        )
+        try:
+            serializer = AnalyzedStringSerializer(analyzed_value)
+            return Response({
+                "id": sha256_hash, 
+                "value": value,
+                "properties": {
+                    "length": length,
+                    "is_palindrome": is_palindrome,
+                    "unique_characters": unique_characters,
+                    "word_count": word_count,
+                    "sha256_hash": sha256_hash,
+                    "character_frequency_map": character_frequency_map
+                },
+                "created_at": analyzed_value.created_at
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'GET':
+# @api_view(['GET'])
+# def get_filtered_strings(request):
+        try:
+            all_strings = AnalyzedString.objects.all()
+
+            is_palindrome = request.query_params.get('is_palindrome', None)
+            min_length = request.query_params.get('min_length', None)   
+            max_length = request.query_params.get('max_length', None)
+            word_count = request.query_params.get('word_count', None)
+            contains_character = request.query_params.get('contains_character', None)
+
+            applied_filters = {}
+
+            if is_palindrome is not None:
+                if is_palindrome.lower() not in ['true', 'false']:
+                    return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
+                is_palindrome_bool = is_palindrome.lower() == 'true'
+                all_strings = all_strings.filter(is_palindrome=is_palindrome_bool)
+                applied_filters['is_palindrome'] = is_palindrome_bool
+
+            if min_length is not None:
+                if not min_length.isdigit():
+                    return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
+                all_strings = all_strings.filter(length__gte=int(min_length))
+                applied_filters['min_length'] = int(min_length)
+
+            if max_length is not None:
+                if not max_length.isdigit():
+                    return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
+                all_strings = all_strings.filter(length__lte=int(max_length))
+                applied_filters['max_length'] = int(max_length)
+
+            if word_count is not None:
+                if not word_count.isdigit():
+                    return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
+                all_strings = all_strings.filter(word_count=int(word_count))
+                applied_filters['word_count'] = int(word_count)
+
+            if contains_character is not None:
+                if len(contains_character) != 1:
+                    return Response({"error": "Invalid query parameter values or types"}, status=status.HTTP_400_BAD_REQUEST)
+                all_strings = all_strings.filter(value__icontains=contains_character)
+                applied_filters['contains_character'] = contains_character
+
+            data = []
+            for string in all_strings:
+                data.append({
+                    "id": string.sha256_hash,
+                    "value": string.value,
+                    "properties": {
+                        "length": string.length,
+                        "is_palindrome": string.is_palindrome,
+                        "unique_characters": string.unique_characters,
+                        "word_count": string.word_count,
+                        "sha256_hash": string.sha256_hash,
+                        "character_frequency_map": string.character_frequency_map
+                    },
+                    "created_at": string.created_at
+                })
+            return Response({
+                "data": data,
+                "count": len(data),
+                "filters_applied": applied_filters
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 @api_view(['GET'])
 def get_string(request, specific_string):
