@@ -48,6 +48,10 @@ def strings(request):
                 if 'value' in request.data:
                     value = request.data['value']
                     print("Extracted value directly from request.data:", value)
+
+                else:
+                    # FIX: Return 400 if no value found anywhere
+                    return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
             
             print("Final extracted value:", value)
             
