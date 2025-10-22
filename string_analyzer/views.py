@@ -196,7 +196,7 @@ def get_remove_string(request, specific_string):
         elif request.method == 'DELETE':
             print("DELETE called for:", specific_string)
             specific_analyzed_string.delete()
-            return Response({"message": "String successfully deleted"}, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_204_NO_CONTENT)  
             
     except AnalyzedString.DoesNotExist:
         return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
