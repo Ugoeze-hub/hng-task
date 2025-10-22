@@ -17,6 +17,7 @@ def home(request):
     return Response(serializer.data)
 
 
+@api_view(['POST'])
 def strings(request):
     value = request.data.get('value', '')
     if not value:
@@ -89,6 +90,7 @@ def get_string(request, specific_string):
         return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(['GET'])
 def get_filtered_strings(request):
     try:
         all_strings = AnalyzedString.objects.all()
@@ -155,13 +157,7 @@ def get_filtered_strings(request):
     
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-@api_view(['GET', 'POST'])
-def strings(request):
-    if request.method == 'POST':
-        return strings(request)  
-    elif request.method == 'GET':
-        return get_filtered_strings(request)
+
 
 
     
