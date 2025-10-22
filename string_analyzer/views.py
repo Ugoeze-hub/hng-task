@@ -156,7 +156,7 @@ def get_filtered_strings(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    
+
     
 @api_view(['GET'])
 def natural_language_filter(request):
@@ -224,9 +224,12 @@ def natural_language_filter(request):
 def delete_string(request, specific_string):
     try:
         specific_analyzed_string = AnalyzedString.objects.get(value=specific_string)
-        AnalyzedStringSerializer(specific_analyzed_string).delete()
+        specific_analyzed_string.delete()
         return Response({"message": "String successfully deleted"}, status=status.HTTP_200_OK)
     except AnalyzedString.DoesNotExist:
         return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
-    
-
+    except Exception as e:
+        return Response(
+            {"error": f"An unexpected error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
